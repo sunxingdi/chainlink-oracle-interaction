@@ -103,8 +103,31 @@ Latest Round Data Result(5) [
 ]
 ```
 
+### 场景3：获取随机数
+
+Chainlink VRF（Verifiable Random Function）提供了两种方式来获取随机数：订阅模式（Subscription）和直接资助模式（Direct Funding）。
+
+- 订阅模式（Subscription）：
+  
+  在订阅模式下，用户创建一个订阅账户，并为其充值 LINK 代币。然后，用户在自己的智能合约中指定这个订阅 ID，并通过它来请求随机数。这种方式的优点是方便管理费用，特别是当用户有多个合约需要使用 Chainlink VRF 服务时，可以统一管理 LINK 代币。此外，它也可以减少合约的复杂性，因为合约不需要直接处理 LINK 代币的转移。
+
+- 直接资助模式（Direct Funding）：
+  
+  直接资助模式下，每个合约都需要单独存有足够的 LINK 代币以支付请求随机数的费用。用户直接向合约地址发送 LINK 代币，然后合约使用这些代币来支付随机数请求的费用。这种方式使得每个合约都必须管理自己的 LINK 余额，适用于只有单个或少数几个合约需要获取随机数的情况。
+
+
 ### 参考文章
 
 [chainlink 喂价合约地址](https://docs.chain.link/data-feeds/price-feeds/addresses/)
 
 [chainlink 喂价节点网络](https://data.chain.link/)
+
+[chainlink 可验证随机数](https://docs.chain.link/vrf/)
+
+
+TODO:
+预言机原理，
+chainlink预言机功能列表
+链上获取chainlink随机数，
+链下获取chainlink随机数，
+hardhat chainlink 插件
