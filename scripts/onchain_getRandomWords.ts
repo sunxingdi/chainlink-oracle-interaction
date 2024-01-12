@@ -1,6 +1,8 @@
 import { Wallet, Contract, providers } from "ethers";
 import { ethers } from "hardhat";
 
+import { VRFv2DirectFundingConsumerABI } from "./contract_abi";
+
 import {
   SEPOLIA_RPC_URL,
   PRIVATE_KEY,
@@ -57,33 +59,78 @@ async function initialWallet() {
 
 async function makeDeploy() {
 
-  const MyContract = await ethers.getContractFactory("VRFv2DirectFundingConsumer", wallet); //指定账户部署，需要用私钥初始化
+  // 方法1：使用工厂合约部署
+  // const MyContract = await ethers.getContractFactory("VRFv2DirectFundingConsumer", wallet); //指定账户部署，需要用私钥初始化
+  // console.log("\n", "部署合约...");
+  // const myContract = await MyContract.deploy();
+  // console.log("合约地址:", myContract.target);
 
-  console.log("\n", "部署合约...");
-  const myContract = await MyContract.deploy();
-  console.log("合约地址:", myContract.target);
+  // const ContractInstance = await myContract.waitForDeployment();
+  // // console.log("\nContractInstance: \n", ContractInstance);
 
-  const ContractInstance = await myContract.waitForDeployment();
-  // console.log("\nContractInstance: \n", ContractInstance);
+  // const ContractTransactionResponse = await myContract.deploymentTransaction()
+  // console.log("\n", "返回交易信息...");
+  // console.log(ContractTransactionResponse);
 
-  const ContractTransactionResponse = await myContract.deploymentTransaction()
-  console.log("\n", "返回交易信息...");
-  console.log(ContractTransactionResponse);
+  // const txHash = ContractTransactionResponse.hash //获取交易哈希
+  // const txReceipt = await provider.waitForTransaction(txHash); //等待交易完成，返回交易回执
+  // // const txReceipt = await provider.getTransactionReceipt(txHash); //该方法有问题，不等待直接获取回执，可能交易还未完成。
+  // console.log("\n", "获取交易回执...");
+  // console.log(txReceipt);
 
-  const txHash = ContractTransactionResponse.hash //获取交易哈希
-  const txReceipt = await provider.waitForTransaction(txHash); //等待交易完成，返回交易回执
-  // const txReceipt = await provider.getTransactionReceipt(txHash); //该方法有问题，不等待直接获取回执，可能交易还未完成。
-  console.log("\n", "获取交易回执...");
-  console.log(txReceipt);
+  // 方法2：使用ABI创建合约
+  const VRFv2DirectFundingConsumerAddr = "0x44Cd3824e60B59231110DBEaC4E7509663da42eD";
+  const myContract = new ethers.Contract(VRFv2DirectFundingConsumerAddr, VRFv2DirectFundingConsumerABI, wallet);
 
-  console.log("\n", "获取随机数...");
-  const [roundID, price, startedAt, timeStamp, answeredInRound] = await myContract.requestRandomWords();
+  console.log("\n", "向合约转账LINK代币...");
+  // LINK代币合约地址和ABI（只需包括transfer函数）
+  const linkTokenAddress = "0x779877A7B0D9E8603169DdbD7836e478b4624789"; // Sepolia LINK代币合约地址
+  const linkTokenAbi = [
+    "function transfer(address to, uint amount) returns (bool)",
+  ];
+  // 创建代币合约实例
+  const linkTokenContract = new ethers.Contract(linkTokenAddress, linkTokenAbi, wallet);  
+  // 接收者地址和转账数量
+  const toAddress = myContract.target; // 接收LINK代币的合约地址
+  const amount = ethers.parseUnits("5", 18); // LINK代币精度：18位。获取随机数需要消耗5个LINK左右。
 
-  console.log("Round ID:", roundID);
-  console.log("Price:", price);
-  console.log("Started At:", startedAt);
-  console.log("Timestamp:", timeStamp);
-  console.log("Answered in Round:", answeredInRound);  
+  // 调用transfer函数发送代币
+  const transactionResponse = await linkTokenContract.transfer(toAddress, amount);
+  console.log(`转账LINK TxHash: ${transactionResponse.hash}`);
+
+  // 等待交易被挖掘
+  const receipt = await transactionResponse.wait();
+  console.log(`转账LINK确认区块: ${receipt.blockNumber}`);
+
+  // 估算调用合约函数所需的gas
+  const estimatedGas = await myContract.requestRandomWords.estimateGas();
+  console.log("\n", "GasLimit估算值...");
+  console.log(estimatedGas);
+
+  const gasLimitWithBuffer = estimatedGas + estimatedGas * 200n / 100n; //BigInt类型
+  console.log("\n", "GasLimit实际值...");
+  console.log(gasLimitWithBuffer);
+
+  console.log("\n", "请求随机数...");
+  const requestId = await myContract.requestRandomWords({gasLimit: gasLimitWithBuffer});
+  console.log("请求ID: ", requestId);
+
+  // 监控 RequestFulfilled 事件
+  console.log("\n", `正在监听，事件名：RequestFulfilled事件，合约地址：${myContract.target}`);
+  // const eventFilter = myContract.filters.RequestFulfilled();
+  myContract.once("RequestFulfilled", async (requestId: number, randomWords: number[], payment:number, event) => {
+
+    console.log("\n", `监听到RequestFulfilled事件...`);
+    console.log(`事件参数: requestId=${requestId}, randomWords=${randomWords}, payment=${payment}`);
+    console.log(`事件对象: `, event);
+
+    // 输出获取到的数据
+    const price = await myContract.s_requests(requestId);
+    console.log("\n", `获取随机数...`);
+    console.log(price);
+
+  });
+
 }
 
 async function main() {
