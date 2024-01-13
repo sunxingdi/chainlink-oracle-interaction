@@ -57,9 +57,9 @@ async function initialWallet() {
 
 }
 
-async function makeDeploy() {
+async function makeRequest() {
 
-  // 方法1：使用工厂合约部署
+  // 方法1：使用工厂部署合约
   // const MyContract = await ethers.getContractFactory("VRFv2DirectFundingConsumer", wallet); //指定账户部署，需要用私钥初始化
   // console.log("\n", "部署合约...");
   // const myContract = await MyContract.deploy();
@@ -92,7 +92,7 @@ async function makeDeploy() {
   const linkTokenContract = new ethers.Contract(linkTokenAddress, linkTokenAbi, wallet);  
   // 接收者地址和转账数量
   const toAddress = myContract.target; // 接收LINK代币的合约地址
-  const amount = ethers.parseUnits("5", 18); // LINK代币精度：18位。获取随机数需要消耗5个LINK左右。
+  const amount = ethers.parseUnits("10", 18); // LINK代币精度：18位。获取随机数需要消耗5个LINK左右。
 
   // 调用transfer函数发送代币
   const transactionResponse = await linkTokenContract.transfer(toAddress, amount);
@@ -137,7 +137,7 @@ async function main() {
 
   await initSetting();
   await initialWallet();
-  await makeDeploy();
+  await makeRequest();
 
 }
 
