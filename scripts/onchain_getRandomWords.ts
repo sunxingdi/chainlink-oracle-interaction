@@ -89,7 +89,7 @@ async function makeRequest() {
     "function transfer(address to, uint amount) returns (bool)",
   ];
   // 创建代币合约实例
-  const linkTokenContract = new ethers.Contract(linkTokenAddress, linkTokenAbi, wallet);  
+  const linkTokenContract = new ethers.Contract(linkTokenAddress, linkTokenAbi, wallet);
   // 接收者地址和转账数量
   const toAddress = myContract.target; // 接收LINK代币的合约地址
   const amount = ethers.parseUnits("10", 18); // LINK代币精度：18位。获取随机数需要消耗5个LINK左右。
@@ -124,12 +124,14 @@ async function makeRequest() {
     console.log(`事件参数: requestId=${requestId}, randomWords=${randomWords}, payment=${payment}`);
     console.log(`事件对象: `, event);
 
-    // 输出获取到的数据
-    const price = await myContract.s_requests(requestId);
-    console.log("\n", `获取随机数...`);
-    console.log(price);
+  // 输出获取到的数据
+  const lastRequestId = await myContract.lastRequestId();
+  const RequestStatus = await myContract.getRequestStatus(lastRequestId);
+  console.log("\n", `获取随机数...`);
+  console.log(RequestStatus.randomWords);
 
   });
+
 
 }
 
